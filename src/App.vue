@@ -176,6 +176,32 @@ export default {
       newItemTitle: ""
     };
   },
+  created: {
+    // create database index on the 'type' field
+    db.createIndex({ index: { fields: ['type']}}).then(() => {
+      // load all 'list' items
+      let q = {
+        selector: {
+          type: 'list'
+        }
+      }
+      return db.find(q)
+    }).then((data) => {
+
+      // write the data to the Vue model, and from there the web page
+      app.shoppingLists = data.docs
+
+      // get all the shopping list items
+      let q = {
+        selector: {
+          type: 'item'
+        }
+      }
+      return db.find(q)
+    }).then((data) => {
+      app.shoppingListItems = data.docs
+    })
+  },
   computed: {
     counts() {
       let obj = {};
@@ -234,8 +260,11 @@ export default {
       obj.list = this.currentListId;
       obj.createdAt = new Date().toISOString();
       obj.updatedAt = new Date().toISOString();
-      this.shoppingListItems.unshift(obj);
-      this.newItemTitle = "";
+      db.put(obj).then((data) => {
+        obj._rev = rev.data
+        this.shoppingListItems.unshift(obj)
+        this.newItemTitle = ''
+      })
     }
   }
 };
